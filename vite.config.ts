@@ -1,12 +1,10 @@
-import { resolve } from "path"
-import { defineConfig, loadEnv } from "vite"
+import { resolve } from "node:path"
+import prefresh from '@prefresh/vite';
+import { defineConfig } from "vite"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 import livereload from "rollup-plugin-livereload"
-import solidPlugin from 'vite-plugin-solid';
 import zipPack from "vite-plugin-zip-pack";
 import fg from 'fast-glob';
-
-import vitePluginYamlI18n from './yaml-plugin';
 
 const env = process.env;
 const isSrcmap = env.VITE_SOURCEMAP === 'inline';
@@ -26,23 +24,13 @@ export default defineConfig({
     },
 
     plugins: [
-        solidPlugin({
-            babel: {
-                plugins: ['solid-styled-jsx/babel']
-            }
-        }),
-
-        vitePluginYamlI18n({
-            inDir: 'public/i18n',
-            outDir: `${outputDir}/i18n`
-        }),
-
+        prefresh(),
         viteStaticCopy({
             targets: [
                 { src: "./README*.md", dest: "./" },
                 { src: "./plugin.json", dest: "./" },
                 { src: "./preview.png", dest: "./" },
-                { src: "./icon.png", dest: "./" }
+                { src: "./icon.png", dest: "./" },
             ],
         }),
     ],
@@ -59,7 +47,7 @@ export default defineConfig({
         sourcemap: isSrcmap ? 'inline' : false,
 
         lib: {
-            entry: resolve(__dirname, "src/index.ts"),
+            entry: resolve(__dirname, "src/index.tsx"),
             fileName: "index",
             formats: ["cjs"],
         },
@@ -75,7 +63,7 @@ export default defineConfig({
                                 './README*.md',
                                 './plugin.json'
                             ]);
-                            for (let file of files) {
+                            for (const file of files) {
                                 this.addWatchFile(file);
                             }
                         }

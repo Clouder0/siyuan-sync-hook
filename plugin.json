@@ -1,8 +1,8 @@
 {
-  "name": "plugin-sample-vite-solidjs",
-  "author": "frostime",
-  "url": "https://github.com/frostime/plugin-sample-vite-solidjs",
-  "version": "0.3.6",
+  "name": "sync-hook",
+  "author": "Clouder0",
+  "url": "https://github.com/clouder0/siyuan-sync-hook",
+  "version": "0,0.1",
   "minAppVersion": "3.0.12",
   "backends": [
     "all"
@@ -11,12 +11,12 @@
     "all"
   ],
   "displayName": {
-    "en_US": "Plugin sample with vite and solidjs",
-    "zh_CN": "插件样例 vite + solidjs 版"
+    "en_US": "Sync Hook",
+    "zh_CN": "Sync Hook"
   },
   "description": {
-    "en_US": "SiYuan plugin sample with vite and solidjs",
-    "zh_CN": "使用 vite 和 solidjs 开发的思源插件样例"
+    "en_US": "Add custom hooks using SiYuan as your source of data for synchronization.",
+    "zh_CN": "使用思源笔记为信息源添加自定义同步 Hooks."
   },
   "readme": {
     "en_US": "README.md",
@@ -29,8 +29,8 @@
   },
   "keywords": [
     "plugin",
-    "sample",
-    "插件样例",
-    "solidjs"
+    "Sync",
+    "同步",
+    "自定义"
   ]
 }
