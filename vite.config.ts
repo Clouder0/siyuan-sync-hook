@@ -1,4 +1,6 @@
 import { resolve } from "node:path"
+import alias from '@rollup/plugin-alias';
+
 import prefresh from '@prefresh/vite';
 import { defineConfig } from "vite"
 import { viteStaticCopy } from "vite-plugin-static-copy"
@@ -53,10 +55,19 @@ export default defineConfig({
         },
         rollupOptions: {
             plugins: [
+                alias({
+                    entries: [
+                      { find: 'react', replacement: 'preact/compat' },
+                      { find: 'react-dom/test-utils', replacement: 'preact/test-utils' },
+                      { find: 'react-dom', replacement: 'preact/compat' },
+                      { find: 'react/jsx-runtime', replacement: 'preact/jsx-runtime' }
+                    ]
+                  }),
                 ...(isDev ? [
                     livereload(outputDir),
                     {
                         name: 'watch-external',
+
                         async buildStart() {
                             const files = await fg([
                                 'public/i18n/**',
