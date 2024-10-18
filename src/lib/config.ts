@@ -21,7 +21,6 @@ export const getConfig = (old_data: PluginConfigData) => {
 		data: now_data,
 		getWriter: () => {
 			// generate a new cloned tmp data
-			console.log("get writer, now data", res.data);
 			const tmp_data = structuredClone(res.data) as z.infer<
 				typeof config_data_schema
 			>;
@@ -35,13 +34,9 @@ export const getConfig = (old_data: PluginConfigData) => {
 						script: "",
 					};
 					tmp_data.hooks.push(new_hook);
-					console.log("add hook");
-					console.log(tmp_data.hooks);
 					return new_hook;
 				},
 				modify_hook: (id: string, new_hook: type_hook) => {
-					console.log("modify hook", id, new_hook);
-					console.log(tmp_data.hooks);
 					const idx = tmp_data.hooks.findIndex((x) => x.id === id);
 					if (idx === -1) {
 						throw new Error(`No hook ${id} found`);

@@ -1,3 +1,4 @@
+import { useMediaQuery } from "@mui/material";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import Grid2 from "@mui/material/Grid2";
@@ -85,7 +86,6 @@ const Settings = () => {
 	if (ctx.config_writer === undefined) return <></>;
 
 	const nowconf = useSnapshot(ctx.config_writer);
-	console.log("Render Settings with ctx", ctx, "nowconf", nowconf);
 	return (
 		<Container>
 			<List

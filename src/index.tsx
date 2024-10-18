@@ -6,10 +6,14 @@ import { PluginContext } from "@/lib/context";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { render } from "preact";
 import { Menu, Plugin, Setting, showMessage } from "siyuan";
-
-const theme = createTheme({
-	colorSchemes: {
-		dark: true,
+const darkTheme = createTheme({
+	palette: {
+		mode: "dark",
+	},
+});
+const lightTheme = createTheme({
+	palette: {
+		mode: "light",
 	},
 });
 
@@ -26,7 +30,10 @@ export default class PluginSample extends Plugin {
 		this.loadData(STORAGE_NAME).then((x) => {
 			this.plugin_context.config = getConfig(x);
 		});
-		this.plugin_context;
+		this.plugin_context.darkmode =
+			document
+				.getElementsByTagName("html")[0]
+				.getAttribute("data-theme-mode") === "dark";
 	}
 
 	async onload() {
@@ -36,29 +43,18 @@ export default class PluginSample extends Plugin {
 			load_context.config = conf;
 		}
 
-		this.addTopBar({
-			icon: "iconEmoji",
-			title: "Test Solidjs",
-			callback: () => {
-				// this.showHelloDialog();
-			},
-		});
 		this.setting = new Setting({
 			confirmCallback: () => {
-				console.log("setting confirmed.");
 				// read from data
 				const new_data = load_context.config_writer!.data;
-				console.log(new_data);
 				const parsed = config_data_schema.parse(new_data);
 				this.saveData(STORAGE_NAME, parsed);
 				// commit to current context
 				load_context.config = getConfig(parsed);
-				console.log("context updated", load_context);
 			},
 			destroyCallback: () => {
 				// destroy writer
 				load_context.config_writer = undefined;
-				console.log("context writer destroyed");
 			},
 		});
 		this.setting.addItem({
@@ -67,14 +63,14 @@ export default class PluginSample extends Plugin {
 			description: "all hooks you defined",
 			createActionElement: () => {
 				// set context in first element creation
-				console.log("Create action element", load_context);
 				const writer = load_context.config!.getWriter();
 				load_context.config_writer = writer;
 
 				const StateWrapper = ({ ctx }: { ctx: PluginContext }) => {
-					console.log("Render State Wrapper with context", ctx);
 					return (
-						<ThemeProvider theme={theme}>
+						<ThemeProvider
+							theme={load_context.darkmode ? darkTheme : lightTheme}
+						>
 							<PluginContext.Provider value={ctx}>
 								<MySettings />
 							</PluginContext.Provider>
@@ -88,7 +84,7 @@ export default class PluginSample extends Plugin {
 		});
 
 		const topBarElement = this.addTopBar({
-			icon: "iconFace",
+			icon: "iconUpload",
 			title: "SyncHook",
 			position: "right",
 			callback: () => {
