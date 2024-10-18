@@ -1,11 +1,13 @@
 import z from "zod";
 import * as api from "./api";
 
-type RawSyncHook = {
-	name: string;
-	query: string;
-	script: string;
-};
+export const hook_schema = z.object({
+	id: z.string(),
+	name: z.string(),
+	query: z.string(),
+	script: z.string(),
+});
+export type type_hook = z.infer<typeof hook_schema>;
 
 const sql_res_type = z.array(
 	z.object({

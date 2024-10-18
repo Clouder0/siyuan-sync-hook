@@ -1,12 +1,11 @@
-import { render } from "preact";
-import { Plugin, Setting } from "siyuan";
 /* import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css'; */
-import { z } from "zod";
-import "@/index.css";
+import { PluginContext } from "@/lib/context";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { render } from "preact";
+import { Plugin, Setting } from "siyuan";
 
 const theme = createTheme({
 	colorSchemes: {
@@ -15,40 +14,19 @@ const theme = createTheme({
 });
 
 import MySettings from "@/setting";
+import { config_data_schema, getConfig } from "./lib/config";
 
 const STORAGE_NAME = "SyncHook";
 
-const getRef = <T,>(input: T) => {
-	return { current: input };
-};
-
 export default class PluginSample extends Plugin {
+	plugin_context = {} as PluginContext;
+
 	async onload() {
-		let now_data = {
-			...(await this.loadData(STORAGE_NAME)),
-		};
-		if (!now_data.hooks) {
-			now_data.hooks = [];
-		}
-		const data_schema = z
-			.object({
-				hooks: z.array(
-					z.object({
-						id: z.string().default(() => crypto.randomUUID()),
-						name: z.string(),
-						query: z.string(),
-						script: z.string(),
-					}),
-				),
-			})
-			.strip();
-		now_data = data_schema.parse(now_data) as z.infer<typeof data_schema>;
-		console.log(now_data);
-		let tmp_data = getRef(
-			structuredClone(now_data) as z.infer<typeof data_schema>,
-		);
-		console.log("ref:");
-		console.log(tmp_data);
+		const load_context = this.plugin_context;
+		const conf = getConfig(await this.loadData(STORAGE_NAME));
+		console.log("loaded confl", conf);
+		load_context.config = conf;
+
 		this.addTopBar({
 			icon: "iconEmoji",
 			title: "Test Solidjs",
@@ -59,16 +37,19 @@ export default class PluginSample extends Plugin {
 		this.setting = new Setting({
 			confirmCallback: () => {
 				console.log("setting confirmed.");
-				console.log(tmp_data);
-				const new_data = data_schema.parse(tmp_data.current);
+				// read from data
+				const new_data = load_context.config_writer!.data;
 				console.log(new_data);
-				this.saveData(STORAGE_NAME, new_data);
-				now_data = new_data;
+				const parsed = config_data_schema.parse(new_data);
+				this.saveData(STORAGE_NAME, parsed);
+				// commit to current context
+				load_context.config = getConfig(parsed);
+				console.log("context updated", load_context);
 			},
 			destroyCallback: () => {
-				tmp_data = getRef(
-					structuredClone(now_data) as z.infer<typeof data_schema>,
-				);
+				// destroy writer
+				load_context.config_writer = undefined;
+				console.log("context writer destroyed");
 			},
 		});
 		this.setting.addItem({
@@ -76,13 +57,23 @@ export default class PluginSample extends Plugin {
 			direction: "row",
 			description: "all hooks you defined",
 			createActionElement: () => {
-				const vdom = (
-					<ThemeProvider theme={theme}>
-						<MySettings tmp_data={tmp_data} />
-					</ThemeProvider>
-				);
+				// set context in first element creation
+				console.log("Create action element", load_context);
+				const writer = load_context.config!.getWriter();
+				load_context.config_writer = writer;
+
+				const StateWrapper = ({ ctx }: { ctx: PluginContext }) => {
+					console.log("Render State Wrapper with context", ctx);
+					return (
+						<ThemeProvider theme={theme}>
+							<PluginContext.Provider value={ctx}>
+								<MySettings />
+							</PluginContext.Provider>
+						</ThemeProvider>
+					);
+				};
 				const e = document.createElement("div");
-				render(vdom, e);
+				render(<StateWrapper ctx={load_context} />, e);
 				return e;
 			},
 		});

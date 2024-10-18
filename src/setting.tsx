@@ -1,4 +1,3 @@
-import { run_hook } from "@/lib/hook";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import Grid2 from "@mui/material/Grid2";
@@ -7,11 +6,11 @@ import ListItem from "@mui/material/ListItem";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import { type MutableRef, useState } from "preact/hooks";
-import { showMessage } from "siyuan";
+import { useContext } from "preact/hooks";
+import { useSnapshot } from "valtio";
 import DeleteButton from "./components/delete";
-
-type type_hook = { id: string; name: string; query: string; script: string };
+import { PluginContext } from "./lib/context";
+import type { type_hook } from "./lib/hook";
 
 const HookSetting = (props: {
 	hook: type_hook;
@@ -79,8 +78,14 @@ const HookSetting = (props: {
 		</Stack>
 	);
 };
-const Settings = ({ tmp_data }: { tmp_data: MutableRef<any> }) => {
-	const [count, setCount] = useState(0);
+const Settings = () => {
+	const ctx = useContext(PluginContext);
+
+	// still loading data
+	if (ctx.config_writer === undefined) return <></>;
+
+	const nowconf = useSnapshot(ctx.config_writer);
+	console.log("Render Settings with ctx", ctx, "nowconf", nowconf);
 	return (
 		<Container>
 			<List
@@ -92,7 +97,7 @@ const Settings = ({ tmp_data }: { tmp_data: MutableRef<any> }) => {
 					mb: 2,
 				}}
 			>
-				{tmp_data.current.hooks.map((hook: type_hook) => (
+				{nowconf.data.hooks.map((hook: type_hook) => (
 					<ListItem
 						key={hook.id}
 						// alignItems="center"
@@ -101,22 +106,8 @@ const Settings = ({ tmp_data }: { tmp_data: MutableRef<any> }) => {
 					>
 						<HookSetting
 							hook={hook}
-							update={(new_hook) => {
-								console.log(new_hook);
-								tmp_data.current.hooks = tmp_data.current.hooks.map((h) => {
-									if (h.id === hook.id) {
-										return new_hook;
-									}
-									return h;
-								});
-								setCount(count + 1);
-							}}
-							on_delete={() => {
-								tmp_data.current.hooks = tmp_data.current.hooks.filter(
-									(h) => h.id !== hook.id,
-								);
-								setCount(count + 1);
-							}}
+							update={(new_hook) => nowconf.modify_hook(hook.id, new_hook)}
+							on_delete={() => nowconf.delete_hook(hook.id)}
 						/>
 					</ListItem>
 				))}
@@ -127,31 +118,14 @@ const Settings = ({ tmp_data }: { tmp_data: MutableRef<any> }) => {
 				sx={{ position: "sticky", bottom: 0 }}
 			>
 				<Button
+					size="large"
+					color="primary"
+					sx={{ width: "100%" }}
 					variant="contained"
-					onClick={() => {
-						tmp_data.current.hooks.push({
-							id: crypto.randomUUID(),
-							name: `testhook${(Math.random() * 100).toFixed(0).toString()}`,
-							query: "SELECT * FROM blocks",
-							script: "",
-						});
-						setCount(count + 1); // re-render
-					}}
+					onClick={() => nowconf.add_hook()}
 				>
-					add
+					Add
 				</Button>
-				<button
-					type="button"
-					class="text-3xl font-bold"
-					onClick={() => {
-						setCount(count + 1);
-						run_hook("testhook").then(() => {
-							showMessage("hook success", 6000, "info");
-						});
-					}}
-				>
-					fuck
-				</button>
 			</Paper>
 		</Container>
 	);
