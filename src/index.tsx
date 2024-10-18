@@ -5,7 +5,7 @@ import '@fontsource/roboto/700.css'; */
 import { PluginContext } from "@/lib/context";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { render } from "preact";
-import { Plugin, Setting } from "siyuan";
+import { Menu, Plugin, Setting, showMessage } from "siyuan";
 
 const theme = createTheme({
 	colorSchemes: {
@@ -15,17 +15,26 @@ const theme = createTheme({
 
 import MySettings from "@/setting";
 import { config_data_schema, getConfig } from "./lib/config";
+import { run_hook } from "./lib/hook";
 
 const STORAGE_NAME = "SyncHook";
 
 export default class PluginSample extends Plugin {
 	plugin_context = {} as PluginContext;
 
+	onLayoutReady(): void {
+		this.loadData(STORAGE_NAME).then((x) => {
+			this.plugin_context.config = getConfig(x);
+		});
+		this.plugin_context;
+	}
+
 	async onload() {
 		const load_context = this.plugin_context;
-		const conf = getConfig(await this.loadData(STORAGE_NAME));
-		console.log("loaded confl", conf);
-		load_context.config = conf;
+		if (!load_context.config) {
+			const conf = getConfig(await this.loadData(STORAGE_NAME));
+			load_context.config = conf;
+		}
 
 		this.addTopBar({
 			icon: "iconEmoji",
@@ -76,6 +85,65 @@ export default class PluginSample extends Plugin {
 				render(<StateWrapper ctx={load_context} />, e);
 				return e;
 			},
+		});
+
+		const topBarElement = this.addTopBar({
+			icon: "iconFace",
+			title: "SyncHook",
+			position: "right",
+			callback: () => {
+				let rect = topBarElement.getBoundingClientRect();
+				// 如果被隐藏，则使用更多按钮
+				if (rect.width === 0) {
+					rect = document.querySelector("#barMore")!.getBoundingClientRect();
+				}
+				if (rect.width === 0) {
+					rect = document.querySelector("#barPlugins")!.getBoundingClientRect();
+				}
+				this.addMenu(rect);
+			},
+		});
+	}
+	private addMenu(rect?: DOMRect) {
+		const menu = new Menu("SyncHookMenu", () => {});
+		menu.addItem({
+			icon: "iconSelect",
+			label: "Manual Sync",
+			type: "submenu",
+			submenu: this.plugin_context.config!.data.hooks.map((hook) => ({
+				icon: "iconScrollHoriz",
+				label: `Sync ${hook.name}`,
+				click: () => {
+					console.log("Trigger Sync", hook);
+					showMessage(`Starting to run Hook ${hook.name}...`);
+					run_hook(hook)
+						.then((res) => {
+							if (!res || res.status === "0") {
+								showMessage(
+									`Hook ${hook.name} successfully finished! Return: ${JSON.stringify(res)}`,
+								);
+							} else {
+								showMessage(
+									`Hook ${hook.name} failed! Return: ${JSON.stringify(res)}`,
+									0,
+									"error",
+								);
+							}
+						})
+						.catch((e) => {
+							showMessage(
+								`Hook ${hook.name} Exception: ${JSON.stringify(e)}`,
+								0,
+								"error",
+							);
+						});
+				},
+			})),
+		});
+		menu.open({
+			x: rect!.right,
+			y: rect!.bottom,
+			isLeft: true,
 		});
 	}
 }
